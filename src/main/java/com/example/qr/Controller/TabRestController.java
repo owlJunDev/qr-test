@@ -99,13 +99,7 @@ public class TabRestController {
         }
     }
 
-    @Autowired
-    private CellRepository cellRepository;
-
-    @PostMapping(value = "/cells")
-    public void updateCells(@RequestBody CellRequest dataCell) {
-        Cell cell = new Cell(dataCell.cell, dataCell.formula);
-        String exp = (dataCell.formula).replace("=", "");
+    private Cell calc(String exp, Cell cell) {
         String cellsExp = new String();
 
         for (MatchResult match : allMatches(Pattern.compile("([A-Z]\\d)"), exp)) {
@@ -135,6 +129,37 @@ public class TabRestController {
 
         cell.setValue(exp);
         cellRepository.save(cell);
+
+        return cell;
+    }
+
+    @Autowired
+    private CellRepository cellRepository;
+
+    @PostMapping(value = "/cells")
+    public void updateCells(@RequestBody CellRequest dataCell) {
+        Cell cell = new Cell(dataCell.cell, dataCell.formula);
+        String exp = (dataCell.formula).replace("=", "");
+        String cellNames = cell.getName() + " ";
+        String cellNamesCopy;
+
+        boolean isRetry = false;
+
+        calc(exp, cell);
+        do {
+            isRetry = false;
+            System.out.println("loop");
+            for (String cellName : cellNames.split(" ")) {
+                cellNamesCopy = "";
+                for (Cell cellReCalc : cellRepository.findByFormulaLike("%" + cellName + "%")) {
+                    isRetry = true;
+                    cellNamesCopy += cellReCalc.getName() + " ";
+                    exp = (cellReCalc.getFormula()).replace("=", "");
+                    calc(exp, cellReCalc);
+                }
+                cellNames = cellNamesCopy;
+            }
+        } while (isRetry);
     }
 
     @RequestMapping(value = "/table", method = RequestMethod.GET)
