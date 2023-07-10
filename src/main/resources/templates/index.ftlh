@@ -11,7 +11,7 @@
     <table id="table" class="table table-bordered">
         <thead>
         <tr>
-            <th colspan="${chars?size + 1}"><input pattern="([A-Z\d\+\-\*\/\=])" required id="in-form" type="text"></th>
+            <th colspan="${chars?size + 1}"><input required id="in-form" type="text"></th>
         </tr>
         <tr>
             <th></th>
@@ -52,10 +52,12 @@
     let cell = null;
  
     document.addEventListener("click", async function (event) {
-        cell = event.target.getAttribute('id');
-        if (cell !== null){
-            document.getElementById("in-form").focus();
-            document.getElementById("in-form").value = document.getElementsByName(cell).innerHTML;
+        if (event.target.getAttribute('id') !== "in-form") {
+            cell = event.target.getAttribute('id');
+            if (cell !== null){
+                document.getElementById("in-form").focus();
+                document.getElementById("in-form").value = document.getElementsByName(cell).innerHTML !== undefined?document.getElementsByName(cell).innerHTML:"";
+            }
         }
     });
 
@@ -66,8 +68,6 @@
             let str = inElem.value;
 
             if (cell !== null) {
-                console.log("start");
-                console.log(str);
                 let body = {
                     cell: cell,
                     formula: str
@@ -96,8 +96,6 @@
                         });
                 });
 
-                //console.log(await response.json());
-                console.log("end");
                 document.getElementById(cell).innerHTML = str;
             }
             inElem.value = "";

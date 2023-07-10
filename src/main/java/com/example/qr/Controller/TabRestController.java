@@ -12,6 +12,7 @@ import com.example.qr.Repository.CellRepository;
 
 @RestController
 public class TabRestController {
+
     public static Iterable<MatchResult> allMatches(final Pattern p, final CharSequence input) {
         return new Iterable<MatchResult>() {
             public Iterator<MatchResult> iterator() {
@@ -48,23 +49,31 @@ public class TabRestController {
     }
 
     public String firstExp(String exp) {
-        int i = 0;
+        int i;
+        boolean isRetry;
 
         Double[] param = new Double[2];
-        for (MatchResult matchs : allMatches(Pattern.compile("([\\d\\.\\d]+[\\/\\*][\\d\\.\\d]+)"), exp)) {
-            for (MatchResult match : allMatches(Pattern.compile("[\\d\\.\\d]+"), matchs.group())) {
-                param[i++] = Double.parseDouble(match.group());
+        do {
+            isRetry = false;
+            for (MatchResult matchs : allMatches(Pattern.compile("([\\d\\.\\d]+[\\/\\*][\\d\\.\\d]+)"), exp)) {
+                isRetry = true;
+                i = 0;
+                for (MatchResult match : allMatches(Pattern.compile("[\\d\\.\\d]+"), matchs.group())) {
+                    param[i++] = Double.parseDouble(match.group());
+                }
+
+                if (matchs.group().contains("*")) {
+                    exp = exp.replace(matchs.group(), String.valueOf(param[0] * param[1]));
+                } else {
+                    exp = exp.replace(matchs.group(), String.valueOf(param[0] / param[1]));
+                    System.out.println(exp);
+                }
             }
-            if (matchs.group().contains("*")) {
-                exp = exp.replace(matchs.group(), String.valueOf(param[0] * param[1]));
-            } else {
-                exp = exp.replace(matchs.group(), String.valueOf(param[0] / param[1]));
-            }
-        }
+        } while (isRetry);
         return exp;
     }
 
-    public String seconExp(String exp) {
+    public String secondExp(String exp) {
         int i = 0;
 
         Double[] param = new Double[2];
@@ -99,7 +108,7 @@ public class TabRestController {
         String exp = (dataCell.formula).replace("=", "");
         String cellsExp = new String();
 
-        for (MatchResult match : allMatches(Pattern.compile("([A-z]\\d)"), exp)) {
+        for (MatchResult match : allMatches(Pattern.compile("([A-Z]\\d)"), exp)) {
             cellsExp += match.group() + " ";
         }
         if (!cellsExp.isEmpty()) {
@@ -110,10 +119,10 @@ public class TabRestController {
                 exp = exp.replace(c.getName(), c.getValue());
             }
         }
-        
+
         do {
             exp = firstExp(exp);
-            exp = seconExp(exp);
+            exp = secondExp(exp);
 
             for (MatchResult match : allMatches(Pattern.compile("\\([\\d\\.\\d]+\\)"), exp)) {
                 String str = match.group();
